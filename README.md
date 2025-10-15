@@ -1,9 +1,7 @@
 ~~>📋  A  README.md for code accompanying our paper CGAMP
 
 # Graph-Based Causal Learning and Protein Language Models for Multi-Class Prediction of Antimicrobial Peptides
-![Overview](./docs/CGAMP_arch.png) 
-
-
+![Overview](./CGAMP/docs/CGAMP_arch.png)
 
 
 
