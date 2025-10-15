@@ -77,7 +77,6 @@ def prototype_update(prototype, num_classes, class_causal, lack_class):
                                         class_causal[i]).detach()
     return prototype
 
-
 def global_ssl(prototype, class_causal, lack_class, num_classes):
     distance = None
     for i in range(num_classes):

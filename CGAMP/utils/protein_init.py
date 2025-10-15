@@ -293,7 +293,6 @@ def generate_ESM_structure(model, filename, sequence):
                 raise e
     return output is not None
 
-
 from Bio.PDB import PDBParser
 biopython_parser = PDBParser()
 

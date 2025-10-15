@@ -56,7 +56,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-
     full_fasta_path = os.path.join(args.fasta_dir, args.fasta_filename)
     pt_filename = os.path.splitext(args.fasta_filename)[0] + '.pt'
     full_pt_path = os.path.join(args.save_dir, pt_filename)

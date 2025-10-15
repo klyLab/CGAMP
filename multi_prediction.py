@@ -19,7 +19,6 @@ from collections import Counter
 import argparse
 warnings.filterwarnings('ignore')
 
-
 class EarlyStopping:
     def __init__(self, patience=10, delta=0.001):
         self.patience = patience
