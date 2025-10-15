@@ -1,4 +1,4 @@
-from utils import protein_init
+from CGAMP.utils import protein_init
 from Bio import SeqIO
 import torch
 import os
