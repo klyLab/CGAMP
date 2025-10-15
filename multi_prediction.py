@@ -50,9 +50,9 @@ def check_sample_distribution(loader):
 
 def eval(model, loader, device, args, evaluator, target_class):
     model.eval()
-    all_probs = []  # 预测为正例的概率（用于ROC曲线）
-    all_preds = []  # 分类结果（基于阈值）
-    all_labels = []  # 真实标签
+    all_probs = []  # Positive class probabilities
+    all_preds = []  # Predicted labels
+    all_labels = []  # True labels
     total_loss = 0
     total_local_loss = 0
     total_global_loss = 0
@@ -69,7 +69,7 @@ def eval(model, loader, device, args, evaluator, target_class):
             else:
                 pred = torch.nn.functional.softmax(pred, dim=1)
 
-            prob = pred[:, 1]  # 取正例（类别1）的概率
+            prob = pred[:, 1]  # Positive class probability
             all_probs.append(prob.cpu().numpy())
             all_preds.append(pred.argmax(dim=1).cpu().numpy())
             all_labels.append(data.y.cpu().numpy())
@@ -103,14 +103,10 @@ def eval(model, loader, device, args, evaluator, target_class):
     avg_global_loss = total_global_loss / num if args.global_ else 0
     avg_loss = args.pred * avg_pred_loss + args.l * avg_local_loss + args.g * avg_global_loss
 
-    # 拼接所有样本的结果
     all_probs = np.concatenate(all_probs, axis=0)
     all_preds = np.concatenate(all_preds, axis=0)
     all_labels = np.concatenate(all_labels, axis=0)
 
-    # ====================================================
-
-    # 自动阈值处理逻辑（保持不变）
     y_true = all_labels
     y_score = all_probs
 
@@ -160,7 +156,6 @@ criterion = nn.CrossEntropyLoss().to(device)
 
 
 def train_with_best_params(args, target_class, best_params):
-    # 从 args 读取路径（不再写死服务器路径）
     data_path = os.path.join(args.data_dir, 'stage2_11_benchmark_datasets.pt')
     if not os.path.exists(data_path):
         raise FileNotFoundError(
@@ -179,7 +174,6 @@ def train_with_best_params(args, target_class, best_params):
         )
         new_data_list.append(graph_data)
 
-    # 划分训练集和测试集
     train_size = int(0.8 * len(new_data_list))
     test_size = len(new_data_list) - train_size
     train_dataset, test_dataset = random_split(
@@ -188,7 +182,6 @@ def train_with_best_params(args, target_class, best_params):
         generator=torch.Generator().manual_seed(args.seed)
     )
 
-    # 创建数据加载器
     train_loader = DataLoader(
         train_dataset,
         batch_size=args.batch_size,
@@ -202,7 +195,6 @@ def train_with_best_params(args, target_class, best_params):
         collate_fn=torch_geometric.data.Batch.from_data_list
     )
 
-    # 初始化模型、优化器和学习率调度器
     model = Causal(
         hidden_in=args.hidden_in,
         hidden_out=args.num_classes,
@@ -222,7 +214,6 @@ def train_with_best_params(args, target_class, best_params):
         eta_min=args.min_lr
     )
 
-    # 训练模型
     best_test_acc = 0.0
     early_stopping = EarlyStopping(patience=args.patience, delta=args.delta)
     best_model_weights = None
@@ -271,12 +262,12 @@ def train_with_best_params(args, target_class, best_params):
             total_train_loss += total_loss.item() * num_graphs(data)
 
         lr_scheduler.step()
-        num_train_samples = len(train_loader.dataset)  # 训练集总样本数
-        avg_train_loss = total_train_loss / num_train_samples  # 平均训练损失
-        print(f"Epoch [{epoch}/{args.epochs}] | Train Loss: {avg_train_loss:.4f}")  # 打印损失
+        num_train_samples = len(train_loader.dataset)
+        avg_train_loss = total_train_loss / num_train_samples
+        print(f"Epoch [{epoch}/{args.epochs}] | Train Loss: {avg_train_loss:.4f}")
         train_metrics = eval(
             model,
-            train_loader,  # 传入训练集加载器
+            train_loader,
             device,
             args,
             Evaluator(args.eval_name),
@@ -291,28 +282,24 @@ def train_with_best_params(args, target_class, best_params):
               f"Train F1: {train_f1:.4f} | "
               f"Train Acc: {train_acc:.4f}")
 
-        # 测试集评估（传入保存路径参数）
         test_metrics = eval(
             model,
             test_loader,
             device,
             args,
             Evaluator(args.eval_name),
-            target_class=target_class  # 传入目标类别
+            target_class=target_class
         )
         test_auc, test_aupr, test_f1, test_precision, test_recall, test_specificity, test_loss, test_acc = test_metrics
 
-        # 跟踪最佳模型
         if test_acc > best_test_acc:
             best_test_acc = test_acc
-            best_model_weights = model.state_dict()  # 保存最佳权重
+            best_model_weights = model.state_dict()
 
-        # 早停检查
         if early_stopping(test_acc):
             print(f"Early stopping at epoch {epoch}. Best test acc: {best_test_acc:.4f}")
             break
 
-    # 保存最佳模型
     save_file = os.path.join(args.model_save_dir, f"model_class_{target_class}.pt")
     torch.save({
         'epoch': epoch,
@@ -323,7 +310,6 @@ def train_with_best_params(args, target_class, best_params):
     }, save_file)
     print(f"Class {target_class} model saved to: {save_file}")
 
-    # 输出测试集详细指标
     print(f"\nTest Metrics for Class {target_class}:")
     print(f"AUC: {test_auc:.4f}")
     print(f"AUPR: {test_aupr:.4f}")
@@ -453,17 +439,14 @@ def local_ssl(prototype, memory_bank, args, class_causal, lack_class):
 
 def main(args):
     set_seed(args.seed)
-    # 确保输出目录存在
     os.makedirs(args.params_dir, exist_ok=True)
     os.makedirs(args.model_save_dir, exist_ok=True)
 
-    # 遍历11个类别训练（参数从 args 读取）
     for target_class in range(11):
         print(f"\n{'=' * 80}")
         print(f"Training model for class {target_class}")
         print(f"{'=' * 80}\n")
 
-        # 最优参数路径：从 args 读取，不再写死
         params_file = os.path.join(args.params_dir, f"class_{target_class}.json")
         if not os.path.exists(params_file):
             print(f"Warning: No params for class {target_class}, skipping...")
@@ -472,7 +455,6 @@ def main(args):
         with open(params_file, 'r') as f:
             best_params = json.load(f)
 
-        # 训练模型（传递 args，不再传硬编码的 save_path）
         train_with_best_params(args, target_class, best_params)
 
     print("\nAll models training completed!")
@@ -481,7 +463,6 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CGAMP Multi-Class Classification Prediction")
 
-    # 1. 核心路径参数（默认值对齐项目约定）
     parser.add_argument('--data_dir', type=str, default='./data_processed',
                         help='Folder of .pt graph data (default: ./data_processed)')
     parser.add_argument('--params_dir', type=str, default='./best_params',
@@ -491,35 +472,31 @@ if __name__ == "__main__":
     parser.add_argument('--root', type=str, default='./data',
                         help='Root data folder (default: ./data)')
 
-    # 2. 任务/数据相关
-    parser.add_argument('--dataset', type=str, default='benchmark dataset', help='Dataset name')
     parser.add_argument('--domain', type=str, default='basis', help='Domain setting')
-    parser.add_argument('--shift', type=str, default='concept', help='Shift type')
-    parser.add_argument('--eval_metric', type=str, default='rocauc', help='Evaluation metric')
     parser.add_argument('--eval_name', type=str, default='ogbg-molhiv', help='OGB evaluator name')
 
-    # 3. 训练相关参数
     parser.add_argument('--seed', type=int, default=42, help='Random seed (default: 42)')
     parser.add_argument('--epochs', type=int, default=521, help='Training epochs (default: 521)')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size (default: 64)')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate (default: 1e-4)')
     parser.add_argument('--min_lr', type=float, default=1e-5, help='Minimum learning rate (default: 1e-5)')
     parser.add_argument('--weight_decay', type=float, default=0.0002664653812470226, help='Weight decay')
-    parser.add_argument('--pretrain', type=int, default=52, help='Start epoch for best result tracking')
-    parser.add_argument('--trails', type=int, default=1, help='Number of trails')
     parser.add_argument('--patience', type=int, default=10, help='Early stopping patience')
     parser.add_argument('--delta', type=float, default=0.001, help='Early stopping delta')
 
-    # 4. 模型结构参数
     parser.add_argument('--layers', type=int, default=2, help='GNN layers (default: 2)')
     parser.add_argument('--hidden', type=int, default=396, help='Model hidden dimension (default: 396)')
     parser.add_argument('--hidden_in', type=int, default=33, help='Input feature dimension (default: 33)')
     parser.add_argument('--cls_layer', type=int, default=2, help='Classifier layers (default: 2)')
     parser.add_argument('--num_classes', type=int, default=2, help='Number of classes (default: 2)')
 
-    # 5. SSL 开关
     parser.add_argument('--global_', action='store_true', default=True, help='Enable global SSL (default: True)')
     parser.add_argument('--local', action='store_true', default=True, help='Enable local SSL (default: True)')
+    # Add missing SSL weight parameters to avoid KeyError
+    parser.add_argument('--pred', type=float, default=0.7617102814256653, help='Prediction loss weight')
+    parser.add_argument('--g', type=float, default=0.2342299235496516, help='Global SSL weight')
+    parser.add_argument('--l', type=float, default=0.111417383510663, help='Local SSL weight')
+    parser.add_argument('--constraint', type=float, default=0.6741441799446165, help='Constraint coefficient')
 
     args = parser.parse_args()
 

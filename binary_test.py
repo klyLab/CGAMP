@@ -6,16 +6,17 @@ import torch_geometric
 from CGAMP.Net.model_mol import Causal
 import warnings
 from torch_geometric.data import DataLoader, Data
-from sklearn.metrics import roc_auc_score, average_precision_score, f1_score, precision_score, recall_score, confusion_matrix
+from sklearn.metrics import roc_auc_score, average_precision_score, f1_score, precision_score, recall_score, \
+    confusion_matrix
 
 warnings.filterwarnings('ignore')
 
-# 设备设置
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 criterion = nn.CrossEntropyLoss().to(device)
 
+
 def load_model(model, filename='./trained_models/binary_model.pth'):
-    """加载训练好的模型"""
+    """Load the trained model"""
     try:
         state_dict = torch.load(filename, map_location=device)
         model.load_state_dict(state_dict)
@@ -25,11 +26,13 @@ def load_model(model, filename='./trained_models/binary_model.pth'):
         print(f"Error loading model: {e}")
         return None
 
+
 def num_graphs(data):
     if data.batch is not None:
         return data.num_graphs
     else:
         return data.x.size(0)
+
 
 def class_split(y, causal_feature, args):
     class_causal = {}
@@ -46,10 +49,12 @@ def class_split(y, causal_feature, args):
             class_causal[i] = class_causal_feature
     return class_causal, lack_class
 
+
 def softmax_with_temperature(input, t=1, axis=-1):
     ex = torch.exp(input / t)
     sum = torch.sum(ex, axis=axis)
     return ex / sum
+
 
 def prototype_update(prototype, num_classes, class_causal, lack_class):
     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
@@ -72,6 +77,7 @@ def prototype_update(prototype, num_classes, class_causal, lack_class):
                                         class_causal[i]).detach()
     return prototype
 
+
 def global_ssl(prototype, class_causal, lack_class, num_classes):
     distance = None
     for i in range(num_classes):
@@ -85,7 +91,6 @@ def global_ssl(prototype, class_causal, lack_class, num_classes):
                 nn.functional.normalize(class_causal[i], dim=1),
                 nn.functional.normalize(prototype_, dim=1)
             ])
-            #distance_ /= 5
             if distance is None:
                 distance = F.softmax(distance_, dim=1)
             else:
@@ -95,11 +100,12 @@ def global_ssl(prototype, class_causal, lack_class, num_classes):
     loss = criterion(distance, labels)
     return loss
 
+
 def local_ssl(prototype, memory_bank, args, class_causal, lack_class):
     nce = None
     for key in class_causal:
         class_causal[key] = args.constraint * class_causal[key].float() + (
-            1 - args.constraint) * prototype[key].float().detach()
+                1 - args.constraint) * prototype[key].float().detach()
     for i in lack_class:
         _ = class_causal.pop(i)
     for i in range(args.num_classes):
@@ -116,7 +122,7 @@ def local_ssl(prototype, memory_bank, args, class_causal, lack_class):
                 # prototype_=self.prototype.clone().detach()
                 distance = F.softmax(torch.einsum(
                     'kc,nc->kn', [prototype[i:i + 1].detach(), neg]),
-                                     dim=1)
+                    dim=1)
                 dis, idx = torch.sort(distance)
                 if len(idx[0]) < 10:
                     hard_neg = torch.cat(
@@ -124,13 +130,14 @@ def local_ssl(prototype, memory_bank, args, class_causal, lack_class):
                          neg), 0)
                 else:
                     hard_neg = neg[idx[0][0:10]]
-                # 检查 hard_neg 的形状是否与 pos 一致
+                # Check if the shape of hard_neg matches that of pos
                 if hard_neg.shape[1] != pos.shape[1]:
-                    # 如果不一致，可以选择截断或填充
+                    # If they are inconsistent, truncation or padding can be used
                     if hard_neg.shape[1] > pos.shape[1]:
                         hard_neg = hard_neg[:, :pos.shape[1]]
                     else:
-                        padding = torch.zeros(hard_neg.shape[0], pos.shape[1] - hard_neg.shape[1], device=hard_neg.device)
+                        padding = torch.zeros(hard_neg.shape[0], pos.shape[1] - hard_neg.shape[1],
+                                              device=hard_neg.device)
                         hard_neg = torch.cat((hard_neg, padding), dim=1)
 
             memory_bank[i] = hard_neg
@@ -146,26 +153,26 @@ def local_ssl(prototype, memory_bank, args, class_causal, lack_class):
     loss = criterion(nce, labels)
     return loss, memory_bank
 
+
 def eval(model, loader, device, args):
     model.eval()
-    all_probs = []  # 收集正类概率
-    all_preds = []  # 收集类别标签
+    all_probs = []
+    all_preds = []
     all_labels = []
     total_loss = 0
-    total_local_loss = 0  # 新增：用于记录局部对比损失
-    total_global_loss = 0  # 新增：用于记录全局对比损失
+    total_local_loss = 0
+    total_global_loss = 0
     for data in loader:
         data = data.to(device)
         if data.x.shape[0] == 1:
             continue
         with torch.no_grad():
-            pred = model.eval_forward(data)  # 输出 logits
-            # softmax 概率分布
+            pred = model.eval_forward(data)
             if args.domain in ["size", "color"]:
                 pred = torch.nn.functional.log_softmax(pred, dim=-1)
             else:
                 pred = torch.nn.functional.softmax(pred, dim=1)
-            prob = pred[:, 1]  # 正类的概率
+            prob = pred[:, 1]
             all_probs.append(prob.cpu().numpy())
             all_preds.append(pred.argmax(dim=1).cpu().numpy())
             all_labels.append(data.y.cpu().numpy())
@@ -174,7 +181,7 @@ def eval(model, loader, device, args):
             pred_loss = criterion(pred, one_hot_target)
             total_loss += pred_loss.item() * num_graphs(data)
 
-            # 对比学习损失（局部和全局）
+            # Contrastive learning loss
             if args.local or args.global_:
                 causal = model.forward_causal(data)
                 class_causal, lack_class = class_split(data.y, causal, args)
@@ -193,19 +200,17 @@ def eval(model, loader, device, args):
                     global_loss = global_ssl(prototype, class_causal, lack_class, args.num_classes)
                     total_global_loss += global_loss.item() * num_graphs(data)
 
-        # 样本数
+        # Number of samples
     num = len(loader.dataset)
     avg_pred_loss = total_loss / num
     avg_local_loss = total_local_loss / num if args.local else 0
     avg_global_loss = total_global_loss / num if args.global_ else 0
     avg_loss = args.pred * avg_pred_loss + args.l * avg_local_loss + args.g * avg_global_loss
 
-    # 拼接预测概率、标签
     all_probs = np.concatenate(all_probs, axis=0)
     all_preds = np.concatenate(all_preds, axis=0)
     all_labels = np.concatenate(all_labels, axis=0)
 
-    # 计算各项指标
     try:
         auc = roc_auc_score(all_labels, all_probs)
     except:
@@ -225,7 +230,7 @@ def eval(model, loader, device, args):
         tn, fp, fn, tp = cm.ravel()
         specificity = tn / (tn + fp) if (tn + fp) != 0 else 0
     else:
-        specificity = 0  # 防止全为一类时报错
+        specificity = 0
 
     acc = np.mean(all_preds == all_labels)
 
@@ -233,7 +238,6 @@ def eval(model, loader, device, args):
 
 
 if __name__ == "__main__":
-    # 最优参数配置
     best_params = {
         'lr': 0.0001,
         'min_lr': 1e-05,
@@ -250,14 +254,13 @@ if __name__ == "__main__":
     }
 
 
-    # 创建参数对象
     class Args:
         def __init__(self, params):
-            self.hidden_in = 33  # 输入特征维度
-            self.num_classes = 2  # 二分类
+            self.hidden_in = 33
+            self.num_classes = 2
             self.hidden = params['hidden']
             self.layers = params['layers']
-            self.cls_layer = 2  # 分类层数
+            self.cls_layer = 2
             self.global_ = True
             self.local = True
             self.domain = "basis"
@@ -270,7 +273,6 @@ if __name__ == "__main__":
 
     args = Args(best_params)
 
-    # 初始化模型
     model = Causal(
         hidden_in=args.hidden_in,
         hidden_out=args.num_classes,
@@ -279,17 +281,14 @@ if __name__ == "__main__":
         cls_layer=args.cls_layer
     ).to(device).float()
 
-    # 加载训练好的模型
     model = load_model(model)
     if model is None:
         exit(1)
 
-    # 加载独立测试集并确保数据类型一致
     try:
         independent_data = torch.load('./data_processed/independent dataset.pt')
         print(f"Loaded independent test set with {len(independent_data)} samples")
 
-        # 强制所有节点特征为Float类型
         for graph_dict in independent_data:
             graph_dict["x"] = graph_dict["x"].float()
 
@@ -297,7 +296,6 @@ if __name__ == "__main__":
         print(f"Error loading independent test set: {e}")
         exit(1)
 
-    # 转换数据格式
     test_data_list = []
     for graph_dict in independent_data:
         graph_data = Data(
@@ -308,7 +306,6 @@ if __name__ == "__main__":
         )
         test_data_list.append(graph_data)
 
-    # 创建测试集DataLoader
     test_loader = DataLoader(
         test_data_list,
         batch_size=args.batch_size,
@@ -317,10 +314,8 @@ if __name__ == "__main__":
         collate_fn=torch_geometric.data.Batch.from_data_list
     )
 
-    # 评估模型
     auc, aupr, f1, precision, recall, specificity, acc = eval(model, test_loader, device, args)
 
-    # 打印结果
     print("\n=== Independent Test Results ===")
     print(f"Accuracy: {acc:.4f}")
     print(f"AUC-ROC: {auc:.4f}")
@@ -329,5 +324,3 @@ if __name__ == "__main__":
     print(f"Precision: {precision:.4f}")
     print(f"Recall: {recall:.4f}")
     print(f"Specificity: {specificity:.4f}")
-
-

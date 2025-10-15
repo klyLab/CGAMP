@@ -47,7 +47,7 @@ if __name__ == "__main__":
     parser.add_argument('--label', type=int, required=True,
                         help='Label for all sequences in FASTA (binary: 0=non-AMP, 1=AMP; multi-class: 0-10)')
 
-    ### 2. 基础配置参数（仅保留必要项）
+    ### 2. Basic Configuration Parameters (Only Essential Items Retained)
     parser.add_argument('--seed', type=int, default=1, help='Random seed (default: 1)')
     parser.add_argument('--device', type=str, default='cuda:0',
                         help='Device for graph initialization (cuda:0 or cpu, default: cuda:0)')
@@ -56,40 +56,34 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # ---------------------- 路径拼接与初始化 ----------------------
-    # 1. 拼接完整FASTA路径（默认./raw_data + 文件名）
+
     full_fasta_path = os.path.join(args.fasta_dir, args.fasta_filename)
-    # 2. 拼接完整.pt输出路径（默认./data_processed + 文件名替换后缀）
-    pt_filename = os.path.splitext(args.fasta_filename)[0] + '.pt'  # 例：binary_benchmark_pos.fasta → binary_benchmark_pos.pt
+    pt_filename = os.path.splitext(args.fasta_filename)[0] + '.pt'
     full_pt_path = os.path.join(args.save_dir, pt_filename)
-    # 3. 自动创建输出文件夹（不存在则创建，避免报错）
     os.makedirs(args.save_dir, exist_ok=True)
     print(f"Output folder '{args.save_dir}' is ready (auto-created if missing)")
 
-    # ---------------------- 核心逻辑：FASTA → 蛋白质图 ----------------------
-    # 读取FASTA序列
+    # Read FASTA sequences
     protein_seqs, labels = read_fasta_with_labels(full_fasta_path, label=args.label)
 
-    # 生成/加载蛋白质图数据
+    # Generate/Load Protein Graph Data
     if os.path.exists(full_pt_path):
         print(f"Loading existing protein graph from {full_pt_path}...")
         protein_dict = torch.load(full_pt_path, map_location=args.device)
     else:
         print(f"Initializing protein graph (device: {args.device})... This may take a moment.")
-        protein_dict = protein_init(protein_seqs)  # 调用工具函数生成图结构
+        protein_dict = protein_init(protein_seqs)
 
-        # 为图数据添加标签（适配CGAMP分类任务）
         protein_dict['labels'] = torch.tensor(labels, dtype=torch.long)
-        # 保存图数据到默认路径
         torch.save(protein_dict, full_pt_path)
         print(f"Protein graph saved to {full_pt_path}")
 
-    # ---------------------- 结果验证：打印关键信息 ----------------------
+    # ---------------------- Result Verification: Print Key Information ----------------------
     print("\n=== CGAMP FASTA Conversion Summary ===")
     print(f"Input FASTA: {full_fasta_path}")
     print(f"Output .pt File: {full_pt_path}")
     print(f"Number of Sequences: {len(protein_seqs)}")
-    print(f"Graph Keys: {list(protein_dict.keys())}")  # 显示图包含的字段（如x、edge_index、labels）
+    print(f"Graph Keys: {list(protein_dict.keys())}")
     if 'labels' in protein_dict:
         print(f"Label Distribution: Unique values = {torch.unique(protein_dict['labels'])}")
     print("=== Conversion Completed Successfully ===")
