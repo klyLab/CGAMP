@@ -94,10 +94,10 @@ python multi_test.py
 We provide pre-trained model files for the two-stage antimicrobial peptide classification task. You can directly load these models in the testing code (`test.py`) to evaluate their performance without retraining. 
 Alternatively, you can retrain your own models using the provided scripts.
 
-### Binary classification model (Stage 1)
+### Binary classification model 
 - [Antimicrobial Peptide Binary Classifier](https://drive.google.com/file/d/1mlRHP3s6pLEOMVozVeQ8Ye1S7jG6Xndf/view?usp=drive_link).<br>
 
-### Multi-class classification model (Stage 2)
+### Multi-class classification model 
 - [Antimicrobial Peptide Multi-class Classifier](https://drive.google.com/file/d/1ZzXc5aqXXvtilHDZSLr32dY8YiXSpbZe/view?usp=drive_link).<br>
 
 
