@@ -4,12 +4,20 @@
 ![Overview](./CGAMP/docs/CGAMP_arch.png)
 
 
+## CGAMP Webserver <a href="http://CGAMP.ahbd.net/" target="_blank"><img src="image/crystal_ball.png" alt="CGAMP Webserver" width="30"/></a>
 
-## Local Environment Setup for running the test
+Exciting news❗ The CGAMP webserver is now online! 🚀 Explore advanced predictions for antimicrobial peptides, supporting both binary and multi-class classification, at [CGAMP Webserver](http://CGAMP.ahbd.net/).
+
+_Start exploring. Your next discovery_ 🌐🔬 _could be just clicks away!_
+
+<sub>Note: This server is linked to our paper and provides an easy-to-use interface for peptide classification predictions.</sub>
+
+
+## Local Environment Setup for Running the Test
 
 First, download the repository and create the environment.<br>
 
-### Create an environment with conda
+### Create an Environment with Conda
 requirement
 ```bash
 git clone https://github.com/klyLab/CGAMP.git
@@ -29,14 +37,6 @@ We provide the raw amino acid sequences in FASTA format for both binary classifi
 - [Multi-class classification benchmark dataset](https://drive.google.com/file/d/1oO3tno3dFAFrqeXjJR3dUWphrpqPasIF/view?usp=drive_link)
 - [Multi-class classification independent test dataset](https://drive.google.com/file/d/18Tgbn9Dsu3dOAOOIpdQL3VShVA_EjLys/view?usp=drive_link).<br>
 
-### Download trained predictive models
-We provide pre-trained model files for the two-stage antimicrobial peptide classification task. You can download and load them directly in the prediction code without retraining.
-
-#### Binary classification model (Stage 1)
-- [Antimicrobial Peptide Binary Classifier](https://drive.google.com/file/d/1mlRHP3s6pLEOMVozVeQ8Ye1S7jG6Xndf/view?usp=drive_link).<br>
-
-#### Multi-class classification model (Stage 2)
-- [Antimicrobial Peptide Multi-class Classifier](https://drive.google.com/file/d/1ZzXc5aqXXvtilHDZSLr32dY8YiXSpbZe/view?usp=drive_link).<br>
 
 ## Usage
 Put all the downloaded dataset files into the same folder.  
@@ -90,4 +90,31 @@ python multi_prediction.py
 python multi_test.py
 ```
 
- 
+## Download trained predictive models
+We provide pre-trained model files for the two-stage antimicrobial peptide classification task. You can directly load these models in the testing code (`test.py`) to evaluate their performance without retraining. 
+Alternatively, you can retrain your own models using the provided scripts.
+
+### Binary classification model (Stage 1)
+- [Antimicrobial Peptide Binary Classifier](https://drive.google.com/file/d/1mlRHP3s6pLEOMVozVeQ8Ye1S7jG6Xndf/view?usp=drive_link).<br>
+
+### Multi-class classification model (Stage 2)
+- [Antimicrobial Peptide Multi-class Classifier](https://drive.google.com/file/d/1ZzXc5aqXXvtilHDZSLr32dY8YiXSpbZe/view?usp=drive_link).<br>
+
+
+## Citations <a name="citations"></a>
+
+If you find the models useful in your research, please kindly cite our paper:
+
+```bibtex
+@article{kang2025cgamp,
+  title={Graph-Based Causal Learning and Protein Language Models for Multi-Class Prediction of Antimicrobial Peptides},
+  author={Kang, Leyao and Wang, Huiying and Cai, Mengjie and Wu, Chuya and Wang, Bo and Yue, Zhenyu},
+  year={2025},
+  note={Manuscript in preparation}
+}
+```
+
+## Contact <a name="contact"></a>
+If you have any questions or suggestions regarding this work, please feel free to contact us:
+- Kang Leyao: [kangleyao@stu.ahau.edu.cn](mailto:kangleyao@stu.ahau.edu.cn)  
+- Yue Zhenyu: [zhenyuyue@ahau.edu.cn](mailto:zhenyuyue@ahau.edu.cn)
