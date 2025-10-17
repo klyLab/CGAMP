@@ -4,7 +4,7 @@
 ![Overview](./CGAMP/docs/CGAMP_arch.png)
 
 
-## CGAMP Webserver <a href="http://CGAMP.ahbd.net/" target="_blank"><img src="image/crystal_ball.png" alt="CGAMP Webserver" width="30"/></a>
+## CGAMP Webserver <a href="http://CGAMP.ahbd.net/" target="_blank"><img src="CGAMP/docs/crystal_ball.png" alt="CGAMP Webserver" width="30"/></a>
 
 Exciting news❗ The CGAMP webserver is now online! 🚀 Explore advanced predictions for antimicrobial peptides, supporting both binary and multi-class classification, at [CGAMP Webserver](http://CGAMP.ahbd.net/).
 
