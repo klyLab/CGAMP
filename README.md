@@ -67,18 +67,18 @@ After converting all FASTA files to .pt, use combined_data_processing.py to merg
 # Merge binary benchmark positive and negative .pt files:
 python combined_data_processing.py \
   --task binary \
-  --pos_pt_path ./data_processed/binary_benchmark_pos.pt \  
-  --neg_pt_path ./data_processed/binary_benchmark_neg.pt \  
-  --merged_save_path ./data_processed/binary_benchmark_merged.pt  
+  --pos_pt_path ./data_processed/binary_benchmark_pos.pt \
+  --neg_pt_path ./data_processed/binary_benchmark_neg.pt \
+  --merged_save_path ./data_processed/binary_benchmark_merged.pt
 ```
 
 Demo of CGAMP on binary classification:
 ```bash
 # Predict
-python binary_prediction.py 
+python binary_prediction.py
 
 # Test
-python binary_test.py 
+python binary_test.py
 ```
 
 Demo of CGAMP on multi-class classification:

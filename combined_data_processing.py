@@ -2,62 +2,82 @@ import torch
 import argparse
 from sklearn.utils import shuffle
 import os
+from torch_geometric.data import Data
+import ast
 
 
 def main():
-    # Set up command-line argument parser
+    # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Merge binary classification protein graph data (.pt files)')
-    parser.add_argument('--task', type=str, required=True, choices=['binary'],
-                        help='Task type: currently only supports "binary" (binary classification)')
-    parser.add_argument('--pos_pt_path', type=str, required=True,
-                        help='Path to positive sample .pt file (peptides)')
+    parser.add_argument('--task', type=str, required=True, choices=['binary'], help='Task type (binary classification)')
+    parser.add_argument('--pos_pt_path', type=str, required=True, help='Path to positive sample .pt file (peptides)')
     parser.add_argument('--neg_pt_path', type=str, required=True,
                         help='Path to negative sample .pt file (non-peptides)')
-    parser.add_argument('--merged_save_path', type=str, required=True,
-                        help='Save path for the merged .pt file')
-    parser.add_argument('--random_state', type=int, default=42,
-                        help='Random seed for shuffling data, default is 42')
-
-    # Parse arguments
+    parser.add_argument('--merged_save_path', type=str, required=True, help='Save path for merged .pt file')
+    parser.add_argument('--random_state', type=int, default=42, help='Random seed for shuffling (default: 42)')
     args = parser.parse_args()
 
-    # Check if input files exist
-    if not os.path.exists(args.pos_pt_path):
-        raise FileNotFoundError(f"Positive sample file does not exist: {args.pos_pt_path}")
-    if not os.path.exists(args.neg_pt_path):
-        raise FileNotFoundError(f"Negative sample file does not exist: {args.neg_pt_path}")
+    # Check input file existence
+    for path in [args.pos_pt_path, args.neg_pt_path]:
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"File not found: {path}")
 
-    # Create save directory if it doesn't exist
+    # Create output directory if needed
     save_dir = os.path.dirname(args.merged_save_path)
     if save_dir and not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
 
-    # Load positive and negative sample data
-    print(f"Loading positive sample data: {args.pos_pt_path}")
-    graph_peptides = torch.load(args.pos_pt_path)
-    print(f"Loading negative sample data: {args.neg_pt_path}")
-    graph_non_peptides = torch.load(args.neg_pt_path)
+    # Load data from .pt files and convert to uniform dictionary format
+    def load_data(pt_path):
+        data = torch.load(pt_path)
+        graphs = []
+        for val in data.values():
+            if isinstance(val, torch.Tensor):
+                np_dtype = val.numpy().dtype
+                if np_dtype.kind in ("S", "U"):
+                    if np_dtype.kind == "S":
+                        str_data = val.numpy().tobytes().decode("utf-8", errors="ignore").strip()
+                    else:
+                        str_data = "".join(val.numpy().tolist())
+                    graphs.append(ast.literal_eval(str_data) if str_data else {})
+                else:
+                    graphs.append({"tensor": val})
+            elif isinstance(val, dict):
+                graphs.append(val)
+            else:
+                raise TypeError(f"Unsupported data type: {type(val)}")
+        return graphs
 
-    # Assign labels to each graph
-    for graph in graph_peptides:
-        graph["y"] = torch.tensor([1])  # Label 1 for peptides
-    for graph in graph_non_peptides:
-        graph["y"] = torch.tensor([0])  # Label 0 for non-peptides
+    print(f"Loading positive data: {args.pos_pt_path}")
+    pos_data = load_data(args.pos_pt_path)
+    print(f"Loading negative data: {args.neg_pt_path}")
+    neg_data = load_data(args.neg_pt_path)
 
-    # Merge the two datasets
-    all_graphs = graph_peptides + graph_non_peptides
+    def format_graphs(graphs, label):
+        formatted = []
+        for g in graphs:
+            g["y"] = torch.tensor([label])
+            g["x"] = g.get("seq_feat", torch.tensor([]))
+            g["edge_attr"] = g.get("edge_weight", torch.tensor([]))
+            g.setdefault("edge_index", torch.tensor([], dtype=torch.long))
+            formatted.append(Data(**g))
+        return formatted
 
-    # Shuffle the merged dataset
-    shuffled_graphs = shuffle(all_graphs, random_state=args.random_state)
+    pos_formatted = format_graphs(pos_data, 1)
+    neg_formatted = format_graphs(neg_data, 0)
 
-    # Save the shuffled merged data
-    torch.save(shuffled_graphs, args.merged_save_path)
+    # Merge, shuffle and save
+    all_graphs = pos_formatted + neg_formatted
+    print(f"Total samples before shuffling: {len(all_graphs)} (pos: {len(pos_formatted)}, neg: {len(neg_formatted)})")
+    shuffled = shuffle(all_graphs, random_state=args.random_state)
+
+    torch.save(shuffled, args.merged_save_path)
     print(f"Merged data saved to: {args.merged_save_path}")
 
-    # Verify the saved data
-    combined_graphs = torch.load(args.merged_save_path)
-    print(f"Total number of graph data samples: {len(combined_graphs)}")
-    print(f"Data structure of the first graph: {combined_graphs[0]}")
+    # Verify saved data
+    verify = torch.load(args.merged_save_path)
+    print(f"Verified sample count: {len(verify)}")
+    print(f"First graph fields: {[k for k in verify[0].keys] if hasattr(verify[0], 'keys') else []}")
 
 
 if __name__ == "__main__":

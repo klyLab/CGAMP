@@ -3,7 +3,7 @@ Atom (node) and bond (edge) feature encoding specified for molecule data.
 """
 import torch
 from torch import Tensor
-from GOOD.utils.data import x_map, e_map
+from CGAMP.utils.data import x_map, e_map
 import pdb
 
 
