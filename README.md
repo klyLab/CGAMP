@@ -60,6 +60,38 @@ python data_processing.py \
   --label 0 \
   --save_dir ./data_processed  # Output: binary_benchmark_neg.pt
 ```
+When converting FASTA files to .pt format, correct label IDs must be assigned to each functional category for multi-class tasks (see the mapping relationship below). 
+Mismatched labels do not affect program execution, but strict adherence to the mapping allows direct use of pre-trained models without retraining.
+| Category (Antimicrobial Function) | Label ID |
+|-----------------------------------|----------|
+| antibacterial                     | 0        |
+| anticancer                        | 1        |
+| antimammalian                     | 2        |
+| anticandida                       | 3        |
+| antifungal                        | 4        |
+| antigram-negative                 | 5        |
+| antigram-positive                 | 6        |
+| antihiv                           | 7        |
+| antiviral                         | 8        |
+| anurandefense                     | 9        |
+| hemolytic                         | 10       |
+
+```bash
+#Demo 1: Muliti-class classification (antibacterial):
+python data_processing.py \
+  --fasta_dir ./raw_data \
+  --fasta_filename antibacterial.fasta \
+  --label 0 \
+  --save_dir ./data_processed
+```
+```bash
+#Demo 2: Muliti-class classification (anticancer):
+python data_processing.py \
+  --fasta_dir ./raw_data \
+  --fasta_filename anticancer.fasta \
+  --label 1 \
+  --save_dir ./data_processed
+```
 
 Merge Processed Protein Graph (.pt) Files
 After converting all FASTA files to .pt, use combined_data_processing.py to merge category-specific .pt files into a single file for model input.
@@ -70,6 +102,24 @@ python combined_data_processing.py \
   --pos_pt_path ./data_processed/binary_benchmark_pos.pt \
   --neg_pt_path ./data_processed/binary_benchmark_neg.pt \
   --merged_save_path ./data_processed/binary_benchmark_merged.pt
+```
+
+```bash
+# Merge Multi-class benchmark .pt files:
+python combined_data_processing.py \
+  --task multi \
+  --multi_pt_paths ./data_processed/antibacterial_benchmark.pt \
+                   ./data_processed/anticancer_benchmark.pt \
+                   ./data_processed/antimammalian_benchmark.pt \
+                   ./data_processed/anticandida_benchmark.pt \
+                   ./data_processed/antifungal_benchmark.pt \
+                   ./data_processed/antigram-negative_benchmark.pt \
+                   ./data_processed/antigram-positive_benchmark.pt \
+                   ./data_processed/antihiv_benchmark.pt \
+                   ./data_processed/antiviral_benchmark.pt \
+                   ./data_processed/anurandefense_benchmark.pt \
+                   ./data_processed/hemolytic_benchmark.pt \
+  --merged_save_path ./data_processed/multi_benchmark_merged.pt
 ```
 
 Demo of CGAMP on binary classification:

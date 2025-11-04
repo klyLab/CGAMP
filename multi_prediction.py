@@ -62,6 +62,10 @@ def eval(model, loader, device, args, evaluator, target_class):
             continue
         with torch.no_grad():
             pred = model.eval_forward(data)
+            batch_size = data.y.size(0)
+            if pred.size(0) != batch_size:
+                print(f"Warning: pred batch_size {pred.size(0)} != target batch_size {batch_size}, skipping batch")
+                continue
 
             if args.domain in ["size", "color"]:
                 pred = torch.nn.functional.log_softmax(pred, dim=-1)
@@ -74,6 +78,14 @@ def eval(model, loader, device, args, evaluator, target_class):
             all_labels.append(data.y.cpu().numpy())
 
             one_hot_target = data.y.view(-1).type(torch.int64)
+
+            if pred.size(0) != one_hot_target.size(0):
+                print(f"Warning: pred size {pred.size(0)} != target size {one_hot_target.size(0)}, skipping loss calculation")
+                continue
+                
+            pred_loss = criterion(pred, one_hot_target)
+            total_loss += pred_loss.item() * num_graphs(data)
+
             pred_loss = criterion(pred, one_hot_target)
             total_loss += pred_loss.item() * num_graphs(data)
 
@@ -155,7 +167,7 @@ criterion = nn.CrossEntropyLoss().to(device)
 
 
 def train_with_best_params(args, target_class, best_params):
-    data_path = os.path.join(args.data_dir, 'stage2_11_benchmark_datasets.pt')
+    data_path = os.path.join(args.data_dir, 'merged_multiclass.pt')
     if not os.path.exists(data_path):
         raise FileNotFoundError(
             f"Data file not found at {data_path}\n"
@@ -228,6 +240,9 @@ def train_with_best_params(args, target_class, best_params):
             causal = model.forward_causal(data)
             pred = model(causal)
 
+            if pred.size(0) != data.y.size(0):
+                print(f"Warning: pred batch_size {pred.size(0)} != target batch_size {data.y.size(0)}, skipping batch")
+                continue
             one_hot_target = data.y.view(-1).type(torch.int64)
             pred_loss = F.cross_entropy(pred, one_hot_target)
 
@@ -462,9 +477,9 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CGAMP Multi-Class Classification Prediction")
 
-    parser.add_argument('--data_dir', type=str, default='./data_processed',
+    parser.add_argument('--data_dir', type=str, default='./data_processed/多分类',
                         help='Folder of .pt graph data (default: ./data_processed)')
-    parser.add_argument('--params_dir', type=str, default='./best_params',
+    parser.add_argument('--params_dir', type=str, default='./trained_models/multiclass_model/params',
                         help='Folder of best hyperparameters (JSON files, default: ./best_params)')
     parser.add_argument('--model_save_dir', type=str, default='./trained_models',
                         help='Folder to save multi-class models (default: ./trained_models)')

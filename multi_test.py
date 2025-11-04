@@ -52,28 +52,108 @@ def load_and_preprocess_test_data(test_data_path, target_class):
     print(f"Loading test data from: {test_data_path}")
 
     raw_data = torch.load(test_data_path)
+    
 
-    pyg_data_list = dict_to_pyg(raw_data)
-    print(f"Converted {len(pyg_data_list)} graphs to PyG format")
+    if isinstance(raw_data, list):
+        print(f"Detected list format with {len(raw_data)} graphs")
+        processed_data = []
+        for graph in raw_data:
 
-    processed_data = []
-    for graph in pyg_data_list:
-        original_label = graph.y.item()
-        binary_label = 1 if original_label == target_class else 0
+            if not hasattr(graph, 'x') or not hasattr(graph, 'y'):
+                print(f"Warning: Graph missing required attributes")
+                continue
+                
 
-        processed_graph = Data(
-            x=graph.x,
-            edge_index=graph.edge_index,
-            edge_weight=graph.edge_weight if hasattr(graph, 'edge_weight') else None,
-            y=torch.tensor([binary_label], dtype=torch.long),
-            sequence_name=graph.sequence_name
-        )
-        processed_data.append(processed_graph)
+            original_label = graph.y.item()
+            binary_label = 1 if original_label == target_class else 0
+            
+
+            if graph.x.dtype != torch.float32:
+                x = graph.x.float()
+            else:
+                x = graph.x
+                
+
+            if graph.edge_index.dtype != torch.long:
+                edge_index = graph.edge_index.long()
+            else:
+                edge_index = graph.edge_index
+            
+
+            processed_graph = Data(
+                x=x,
+                edge_index=edge_index,
+                y=torch.tensor([binary_label], dtype=torch.long)
+            )
+            
+
+            if hasattr(graph, 'edge_weight') and graph.edge_weight is not None:
+                if graph.edge_weight.dtype != torch.float32:
+                    processed_graph.edge_weight = graph.edge_weight.float()
+                else:
+                    processed_graph.edge_weight = graph.edge_weight
+            else:
+
+                num_edges = graph.edge_index.size(1) if graph.edge_index.dim() > 1 and graph.edge_index.size(1) > 0 else 0
+                processed_graph.edge_weight = torch.ones(num_edges, dtype=torch.float)
+            
+
+            if hasattr(graph, 'edge_attr'):
+                if graph.edge_attr.dtype != torch.float32:
+                    processed_graph.edge_attr = graph.edge_attr.float()
+                else:
+                    processed_graph.edge_attr = graph.edge_attr
+            if hasattr(graph, 'sequence_name'):
+                processed_graph.sequence_name = graph.sequence_name
+                
+            processed_data.append(processed_graph)
+    else:
+
+        pyg_data_list = dict_to_pyg(raw_data)
+        print(f"Converted {len(pyg_data_list)} graphs to PyG format")
+
+        processed_data = []
+        for graph in pyg_data_list:
+            original_label = graph.y.item()
+            binary_label = 1 if original_label == target_class else 0
+
+
+            if graph.x.dtype != torch.float32:
+                x = graph.x.float()
+            else:
+                x = graph.x
+                
+            if graph.edge_index.dtype != torch.long:
+                edge_index = graph.edge_index.long()
+            else:
+                edge_index = graph.edge_index
+
+            processed_graph = Data(
+                x=x,
+                edge_index=edge_index,
+                y=torch.tensor([binary_label], dtype=torch.long),
+                sequence_name=graph.sequence_name
+            )
+            
+
+            if hasattr(graph, 'edge_weight') and graph.edge_weight is not None:
+                if graph.edge_weight.dtype != torch.float32:
+                    processed_graph.edge_weight = graph.edge_weight.float()
+                else:
+                    processed_graph.edge_weight = graph.edge_weight
+            else:
+
+                num_edges = graph.edge_index.size(1) if graph.edge_index.dim() > 1 and graph.edge_index.size(1) > 0 else 0
+                processed_graph.edge_weight = torch.ones(num_edges, dtype=torch.float)
+                
+            processed_data.append(processed_graph)
 
     labels = [d.y.item() for d in processed_data]
     dist = Counter(labels)
     print(f"Class distribution - Positive: {dist.get(1, 0)}, Negative: {dist.get(0, 0)}")
     return processed_data
+
+
 
 
 def evaluate_model_performance(model, test_loader, device, target_class):
@@ -233,13 +313,13 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CGAMP Multi-Class Classification Test (Align with README)")
     parser.add_argument('--test_data_path', type=str,
-                        default='./data_processed/stage2-independent-dataset.pt',
+                        default='./data_processed/multiclass_test/merged_multiclass_test.pt',
                         help='Path to multi-class independent test .pt file (converted from FASTA, default: ./data_processed/stage2-independent-dataset.pt)')
     parser.add_argument('--model_dir', type=str,
-                        default='./trained_models',
+                        default='./trained_models/multiclass_model/model',
                         help='Directory of pre-trained multi-class models (download from README, default: ./trained_models)')
     parser.add_argument('--params_dir', type=str,
-                        default='./best_params',
+                        default='./trained_models/multiclass_model/params',
                         help='Directory of class-specific hyperparameters (JSON files, default: ./best_params)')
     parser.add_argument('--batch_size', type=int, default=64,
                         help='Batch size for evaluation (same as training, default: 64)')
