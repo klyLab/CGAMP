@@ -167,7 +167,7 @@ criterion = nn.CrossEntropyLoss().to(device)
 
 
 def train_with_best_params(args, target_class, best_params):
-    data_path = os.path.join(args.data_dir, 'merged_multiclass.pt')
+    data_path = os.path.join(args.data_dir, 'stage-2 benchmark dataset.pt')
     if not os.path.exists(data_path):
         raise FileNotFoundError(
             f"Data file not found at {data_path}\n"

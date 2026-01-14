@@ -99,7 +99,7 @@ python combined_data_processing.py \
   --task binary \
   --pos_pt_path ./data_processed/binary_benchmark_pos.pt \
   --neg_pt_path ./data_processed/binary_benchmark_neg.pt \
-  --merged_save_path ./data_processed/binary_benchmark_merged.pt
+  --merged_save_path ./data_processed/stage-1 benchmark dataset.pt
 ```
 
 ```bash
@@ -117,7 +117,7 @@ python combined_data_processing.py \
                    ./data_processed/antiviral_benchmark.pt \
                    ./data_processed/anurandefense_benchmark.pt \
                    ./data_processed/hemolytic_benchmark.pt \
-  --merged_save_path ./data_processed/multi_benchmark_merged.pt
+  --merged_save_path ./data_processed/stage-2 benchmark dataset.pt
 ```
 
 Demo of CGAMP on binary classification:
