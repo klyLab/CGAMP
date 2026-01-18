@@ -66,7 +66,6 @@ def eval(model, loader, device, args, evaluator, target_class):
             if pred.size(0) != batch_size:
                 print(f"Warning: pred batch_size {pred.size(0)} != target batch_size {batch_size}, skipping batch")
                 continue
-
             if args.domain in ["size", "color"]:
                 pred = torch.nn.functional.log_softmax(pred, dim=-1)
             else:
@@ -78,14 +77,12 @@ def eval(model, loader, device, args, evaluator, target_class):
             all_labels.append(data.y.cpu().numpy())
 
             one_hot_target = data.y.view(-1).type(torch.int64)
-
             if pred.size(0) != one_hot_target.size(0):
                 print(f"Warning: pred size {pred.size(0)} != target size {one_hot_target.size(0)}, skipping loss calculation")
                 continue
                 
             pred_loss = criterion(pred, one_hot_target)
             total_loss += pred_loss.item() * num_graphs(data)
-
             pred_loss = criterion(pred, one_hot_target)
             total_loss += pred_loss.item() * num_graphs(data)
 
@@ -167,6 +164,11 @@ criterion = nn.CrossEntropyLoss().to(device)
 
 
 def train_with_best_params(args, target_class, best_params):
+    for key, value in best_params.items():
+        if hasattr(args, key):
+            setattr(args, key, value)
+    print(f"Loaded JSON parameters for Class {target_class}: hidden={args.hidden}, layers={args.layers}")
+
     data_path = os.path.join(args.data_dir, 'stage-2 benchmark dataset.pt')
     if not os.path.exists(data_path):
         raise FileNotFoundError(
@@ -239,7 +241,6 @@ def train_with_best_params(args, target_class, best_params):
 
             causal = model.forward_causal(data)
             pred = model(causal)
-
             if pred.size(0) != data.y.size(0):
                 print(f"Warning: pred batch_size {pred.size(0)} != target batch_size {data.y.size(0)}, skipping batch")
                 continue
@@ -320,8 +321,16 @@ def train_with_best_params(args, target_class, best_params):
         'model_state_dict': best_model_weights,
         'optimizer_state_dict': optimizer.state_dict(),
         'best_acc': best_test_acc,
-        'hyperparameters': best_params
+        'hyperparameters': best_params,
+        'train_params': { 
+            'hidden': args.hidden,
+            'layers': args.layers,
+            'hidden_in': args.hidden_in,
+            'num_classes': args.num_classes,
+            'cls_layer': args.cls_layer
+        }
     }, save_file)
+
     print(f"Class {target_class} model saved to: {save_file}")
 
     print(f"\nTest Metrics for Class {target_class}:")
@@ -477,12 +486,12 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CGAMP Multi-Class Classification Prediction")
 
-    parser.add_argument('--data_dir', type=str, default='./data_processed/多分类',
-                        help='Folder of .pt graph data (default: ./data_processed)')
-    parser.add_argument('--params_dir', type=str, default='./trained_models/multiclass_model/params',
+    parser.add_argument('--data_dir', type=str, default='./data_processed/multi_train',
+                        help='Folder of .pt graph data (default: ./data_processed/multi_train)')
+    parser.add_argument('--params_dir', type=str, default='./best_params',
                         help='Folder of best hyperparameters (JSON files, default: ./best_params)')
-    parser.add_argument('--model_save_dir', type=str, default='./trained_models',
-                        help='Folder to save multi-class models (default: ./trained_models)')
+    parser.add_argument('--model_save_dir', type=str, default='./trained_models/multiclass_model/model',
+                        help='Folder to save multi-class models (default: ./trained_models/multiclass_model/model)')
     parser.add_argument('--root', type=str, default='./data',
                         help='Root data folder (default: ./data)')
 
@@ -499,7 +508,7 @@ if __name__ == "__main__":
     parser.add_argument('--delta', type=float, default=0.001, help='Early stopping delta')
 
     parser.add_argument('--layers', type=int, default=2, help='GNN layers (default: 2)')
-    parser.add_argument('--hidden', type=int, default=396, help='Model hidden dimension (default: 396)')
+    parser.add_argument('--hidden', type=int, default=352, help='Model hidden dimension (default: 396)')
     parser.add_argument('--hidden_in', type=int, default=33, help='Input feature dimension (default: 33)')
     parser.add_argument('--cls_layer', type=int, default=2, help='Classifier layers (default: 2)')
     parser.add_argument('--num_classes', type=int, default=2, help='Number of classes (default: 2)')

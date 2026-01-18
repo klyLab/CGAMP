@@ -5,9 +5,11 @@ import torch.nn.functional as F
 import torch_geometric
 from CGAMP.Net.model_mol import Causal
 import warnings
+import os  
 from torch_geometric.data import DataLoader, Data
 from sklearn.metrics import roc_auc_score, average_precision_score, f1_score, precision_score, recall_score, \
     confusion_matrix
+
 
 warnings.filterwarnings('ignore')
 
@@ -16,16 +18,29 @@ criterion = nn.CrossEntropyLoss().to(device)
 
 
 def load_model(model, filename='./trained_models/binary_model.pth'):
-    """Load the trained model"""
+    """Load the trained model """
     try:
-        state_dict = torch.load(filename, map_location=device)
-        model.load_state_dict(state_dict)
-        print(f"Model loaded from {filename}")
+        if not os.path.exists(filename):
+            raise FileNotFoundError(f"Model file not found: {filename}")
+
+        checkpoint = torch.load(filename, map_location=device)
+        print(f"Checkpoint keys: {list(checkpoint.keys())}")
+
+        if 'model_state_dict' in checkpoint:
+            state_dict = checkpoint['model_state_dict']
+        else:
+            state_dict = checkpoint  
+        model.load_state_dict(state_dict, strict=False)
+
+        if 'best_test_acc' in checkpoint:
+            print(f"Model loaded successfully! Best test accuracy: {checkpoint['best_test_acc']:.4f}")
+        else:
+            print(f"Model loaded successfully!")
+        
         return model
     except Exception as e:
         print(f"Error loading model: {e}")
         return None
-
 
 def num_graphs(data):
     if data.batch is not None:
@@ -199,7 +214,7 @@ def eval(model, loader, device, args):
                     global_loss = global_ssl(prototype, class_causal, lack_class, args.num_classes)
                     total_global_loss += global_loss.item() * num_graphs(data)
 
-        # Number of samples
+    # Number of samples
     num = len(loader.dataset)
     avg_pred_loss = total_loss / num
     avg_local_loss = total_local_loss / num if args.local else 0
@@ -240,16 +255,16 @@ if __name__ == "__main__":
     best_params = {
         'lr': 0.0001,
         'min_lr': 1e-05,
-        'weight_decay': 7.022021857867895e-05,
-        'hidden': 264,
+        'weight_decay': 0.0002664653812470226,
+        'hidden': 396,  
         'epochs': 521,
-        'batch_size': 32,
-        'pretrain': 10,
-        'constraint': 0.6438765275781118,
-        'layers': 3,
-        'g': 0.7366938657887405,
-        'l': 0.18429794975881822,
-        'pred': 0.844044437643158
+        'batch_size':  64,
+        'pretrain': 52,
+        'constraint':  0.6741441799446165,
+        'layers': 2, 
+        'g': 0.2342299235496516,
+        'l': 0.111417383510663,
+        'pred': 0.7617102814256653
     }
 
 
@@ -285,7 +300,7 @@ if __name__ == "__main__":
         exit(1)
 
     try:
-        independent_data = torch.load('./data_processed/independent dataset.pt')
+        independent_data = torch.load('./data_processed/binary_test/stage-1 test dataset.pt')
         print(f"Loaded independent test set with {len(independent_data)} samples")
 
         for graph_dict in independent_data:

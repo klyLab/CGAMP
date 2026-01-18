@@ -23,7 +23,6 @@ def list_type(s):
         raise argparse.ArgumentTypeError(f"Invalid list value: {s}")
     return value
 
-
 def read_fasta_with_labels(fasta_file_path, label=0):
     sequences = []
     labels = []
@@ -82,7 +81,7 @@ if __name__ == "__main__":
     print(f"Input FASTA: {full_fasta_path}")
     print(f"Output .pt File: {full_pt_path}")
     print(f"Number of Sequences: {len(protein_seqs)}")
-    print(f"Graph Keys: {list(protein_dict.keys())}")
+    #print(f"Graph Keys: {list(protein_dict.keys())}")
     if 'labels' in protein_dict:
         print(f"Label Distribution: Unique values = {torch.unique(protein_dict['labels'])}")
     print("=== Conversion Completed Successfully ===")

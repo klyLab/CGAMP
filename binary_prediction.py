@@ -34,13 +34,34 @@ def eval(model, loader, device, args, evaluator):
     total_loss = 0
     total_local_loss = 0
     total_global_loss = 0
+    total_graphs = 0
 
     for data in loader:
         data = data.to(device)
+
+        original_y = data.y.clone()
+        original_batch_size = num_graphs(data)
+
         if data.x.shape[0] == 1:
             continue
         with torch.no_grad():
             pred = model.eval_forward(data)  # Output logits
+
+            pred_batch_size = pred.size(0)
+            target_batch_size = original_batch_size
+
+            if pred_batch_size != target_batch_size:
+                print(f"Warning: pred batch_size ({pred_batch_size}) != target batch_size ({target_batch_size}), skipping loss calculation")
+                if args.domain in ["size", "color"]:
+                    pred = torch.nn.functional.log_softmax(pred, dim=-1)
+                else:
+                    pred = torch.nn.functional.softmax(pred, dim=1)
+                prob = pred[:, 1]  # Positive class probability
+                all_probs.append(prob.cpu().numpy())
+                all_preds.append(pred.argmax(dim=1).cpu().numpy())
+                all_labels.append(original_y.cpu().numpy())
+                continue
+
             # Calculate probabilities
             if args.domain in ["size", "color"]:
                 pred = torch.nn.functional.log_softmax(pred, dim=-1)
@@ -55,6 +76,11 @@ def eval(model, loader, device, args, evaluator):
             one_hot_target = data.y.view(-1).type(torch.int64)
             pred_loss = F.cross_entropy(pred, one_hot_target)
             total_loss += pred_loss.item() * num_graphs(data)
+
+            num_graph = num_graphs(data)
+            total_loss += pred_loss.item() * num_graph
+            total_graphs += num_graph
+
 
             if args.local or args.global_:
                 causal = model.forward_causal(data)
@@ -141,6 +167,15 @@ def main(args):
     for data in data_list:
         data.x = data.x.float()  # Ensure float32 type
 
+    filtered_data_list = []
+    for data in data_list:
+        data.x = data.x.float()  # Ensure float32 type
+        if data.x.shape[0] > 1:
+            filtered_data_list.append(data)
+    
+    print(f"Filtered out {len(data_list) - len(filtered_data_list)} single-node samples")
+    data_list = filtered_data_list
+
     # Split into training (80%) and test (20%) sets
     all_labels = torch.cat([data.y for data in data_list], dim=0).cpu().numpy()
     train_indices, test_indices = train_test_split(
@@ -209,14 +244,27 @@ def main(args):
         total_loss_p = 0.0
         total_loss_global = 0.0
         total_loss_local = 0.0
+        total_graphs = 0  
         memory_bank = torch.randn(args.num_classes, 10, args.hidden).cuda()
 
         for step, data in enumerate(train_loader):
             optimizer.zero_grad()
             data = data.to(device)
             data.x = data.x.float()
+
+            original_y = data.y.clone()
+            original_batch_size = num_graphs(data)
+
+            if data.x.shape[0] == 1 and original_batch_size == 1:
+                continue
+                        
             causal = model.forward_causal(data)
             pred = model(causal)
+
+            pred_batch_size = pred.size(0)
+            if pred_batch_size != original_batch_size:
+                print(f"Warning: Training batch {step} - pred batch_size ({pred_batch_size}) != target batch_size ({original_batch_size}), skipping")
+                continue
 
             # Calculate prediction loss
             if args.domain in ["size", "color"]:
@@ -273,6 +321,8 @@ def main(args):
         if test_acc > best_test_acc and epoch > args.pretrain:
             best_test_acc = test_acc
             best_test_result = test_result
+            best_model_state = model.state_dict().copy()
+            print(f"Epoch {epoch} Update best model (Test Acc: {test_acc:.4f})")
 
         # Print epoch information
         print(f"Epoch [{epoch}/{args.epochs}] | "
@@ -282,6 +332,23 @@ def main(args):
               f"Time: {(time.time() - start_epoch) / 60:.2f}min")
 
         lr_scheduler.step()
+
+    if best_model_state is not None:
+        save_path = './trained_models/binary_model.pth'
+        torch.save({
+            'model_state_dict': best_model_state,
+            'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': lr_scheduler.state_dict(),
+            'best_test_acc': best_test_acc,
+            'best_test_result': best_test_result,
+            'args': args  
+        }, save_path)
+        print(f"\nBest model saved to: {save_path}")
+    else:
+        print("\nNo optimal model found (epoch > pretrain condition may not be satisfied)")
+    # Print total training time
+    total_time = time.time() - start_time
+    print(f"\nTotal training time: {time.strftime('%H:%M:%S', time.gmtime(total_time))}")
 
     # Print total training time
     total_time = time.time() - start_time
@@ -416,8 +483,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CGAMP Binary Classification Prediction")
 
     # 1. Path-related
-    parser.add_argument('--data_dir', type=str, default='./data_processed',
-                        help='Folder of .pt graph data (default: ./data_processed)')
+    parser.add_argument('--data_dir', type=str, default='./data_processed/binary_train',
+                        help='Folder of .pt graph data (default: ./data_processed/binary_train)')
 
     # 2. Task/Data-related
     parser.add_argument('--domain', type=str, default='basis', help='Domain setting')

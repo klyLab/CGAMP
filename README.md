@@ -48,7 +48,7 @@ python data_processing.py \
   --fasta_dir ./raw_data \
   --fasta_filename binary_benchmark_pos.fasta \
   --label 1 \
-  --save_dir ./data_processed # Output: binary_benchmark_pos.pt
+  --save_dir ./data_processed/binary_train # Output: binary_benchmark_pos.pt
 ```
 ```bash
 # Demo 2: Binary classification negative sample (label=0):
@@ -56,7 +56,7 @@ python data_processing.py \
   --fasta_dir ./raw_data \
   --fasta_filename binary_benchmark_neg.fasta \
   --label 0 \
-  --save_dir ./data_processed  # Output: binary_benchmark_neg.pt
+  --save_dir ./data_processed/binary_train  # Output: binary_benchmark_neg.pt
 ```
 When converting FASTA files to .pt format, correct label IDs must be assigned to each functional category for multi-class tasks (see the mapping relationship below). 
 Mismatched labels do not affect program execution, but strict adherence to the mapping allows direct use of pre-trained models without retraining.
@@ -80,7 +80,7 @@ python data_processing.py \
   --fasta_dir ./raw_data \
   --fasta_filename antibacterial.fasta \
   --label 0 \
-  --save_dir ./data_processed
+  --save_dir ./data_processed/multi_train
 ```
 ```bash
 #Demo 2: Muliti-class classification (anticancer):
@@ -88,7 +88,7 @@ python data_processing.py \
   --fasta_dir ./raw_data \
   --fasta_filename anticancer.fasta \
   --label 1 \
-  --save_dir ./data_processed
+  --save_dir ./data_processed/multi_train
 ```
 
 Merge Processed Protein Graph (.pt) Files
@@ -97,27 +97,26 @@ After converting all FASTA files to .pt, use combined_data_processing.py to merg
 # Merge binary benchmark positive and negative .pt files:
 python combined_data_processing.py \
   --task binary \
-  --pos_pt_path ./data_processed/binary_benchmark_pos.pt \
-  --neg_pt_path ./data_processed/binary_benchmark_neg.pt \
-  --merged_save_path ./data_processed/stage-1 benchmark dataset.pt
+  --pos_pt_path ./data_processed/binary_train/binary_benchmark_pos.pt \
+  --neg_pt_path ./data_processed/binary_train/binary_benchmark_neg.pt \
+  --merged_save_path "./data_processed/binary_train/stage-1 benchmark dataset.pt"
 ```
 
 ```bash
 # Merge Multi-class benchmark .pt files:
 python combined_data_processing.py \
-  --task multi \
-  --multi_pt_paths ./data_processed/antibacterial_benchmark.pt \
-                   ./data_processed/anticancer_benchmark.pt \
-                   ./data_processed/antimammalian_benchmark.pt \
-                   ./data_processed/anticandida_benchmark.pt \
-                   ./data_processed/antifungal_benchmark.pt \
-                   ./data_processed/antigram-negative_benchmark.pt \
-                   ./data_processed/antigram-positive_benchmark.pt \
-                   ./data_processed/antihiv_benchmark.pt \
-                   ./data_processed/antiviral_benchmark.pt \
-                   ./data_processed/anurandefense_benchmark.pt \
-                   ./data_processed/hemolytic_benchmark.pt \
-  --merged_save_path ./data_processed/stage-2 benchmark dataset.pt
+  --task multiclass \
+  --class_pt_paths ./data_processed/multi_train/antibacterial.pt,./data_processed/multi_train/anticancer.pt,./data_processed/multi_train/antimammalian.pt,./data_processed/multi_train/anticandida.pt,./data_processed/multi_train/antifungal.pt,./data_processed/multi_train/antigram-negative.pt,./data_processed/multi_train/antigram-positive.pt,./data_processed/multi_train/antihiv.pt,./data_processed/multi_train/antiviral.pt,./data_processed/multi_train/anurandefense.pt,./data_processed/multi_train/hemolytic.pt \
+  --class_labels 0,1,2,3,4,5,6,7,8,9,10 \
+  --merged_save_path "./data_processed/multi_train/stage-2 benchmark dataset.pt"
+```
+```bash
+# Merge Multi-class test .pt files:
+python combined_data_processing.py \
+  --task multiclass \
+  --class_pt_paths ./data_processed/multi_test/antibacterial.pt,./data_processed/multi_test/anticancer.pt,./data_processed/multi_test/anti_mammalian_cells.pt,./data_processed/multi_test/antifungal.pt,./data_processed/multi_test/antigram_neg.pt,./data_processed/multi_test/antigram_pos.pt,./data_processed/multi_test/antiviral.pt \
+  --class_labels 0,1,2,4,5,6,8 \
+  --merged_save_path "./data_processed/multi_test/stage-2 test dataset.pt"
 ```
 
 Demo of CGAMP on binary classification:
