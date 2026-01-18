@@ -335,6 +335,8 @@ def main(args):
 
     if best_model_state is not None:
         save_path = './trained_models/binary_model.pth'
+        save_dir = os.path.dirname(save_path)
+        os.makedirs(save_dir, exist_ok=True)
         torch.save({
             'model_state_dict': best_model_state,
             'optimizer_state_dict': optimizer.state_dict(),
