@@ -74,6 +74,10 @@ Mismatched labels do not affect program execution, but strict adherence to the m
 | anurandefense                     | 9        |
 | hemolytic                         | 10       |
 
+
+In this work, the multi-class classification model is trained on 11 antimicrobial functional categories(label IDs 0–10), 
+while the independent test dataset contains only 7 categories(label IDs 0,1,2,4,5,6,8).
+
 ```bash
 #Demo 1: Muliti-class classification (antibacterial):
 python data_processing.py \
@@ -127,6 +131,12 @@ python binary_prediction.py
 # Test
 python binary_test.py
 ```
+
+### Class-specific Hyperparameter Configuration
+For multi-class classification, CGAMP adopts class-specific hyperparameter configurations. Each antimicrobial functional category is associated with its own set of optimized parameters,
+reflecting the substantial differences among AMP categories in sequence characteristics and biochemical properties.
+Multi-class training requires loading the corresponding hyperparameter configuration file.
+The optimized hyperparameters for all classes are provided in:https://drive.google.com/file/d/1WCNoUMEomXRxgFAtomXLBll9fCjavoLq/view?usp=drive_link
 
 Demo of CGAMP on multi-class classification:
 ```bash
