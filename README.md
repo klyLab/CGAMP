@@ -134,7 +134,7 @@ python binary_test.py
 
 For multi-class classification, CGAMP adopts class-specific hyperparameter configurations. Each antimicrobial functional category is associated with its own set of optimized parameters, Multi-class training requires loading the corresponding hyperparameter configuration file.
 #### Optimized hyperparameters for all classes
-- [Optimized hyperparameters](https://drive.google.com/file/d/1WCNoUMEomXRxgFAtomXLBll9fCjavoLq/view?usp=drive_link)
+- [Optimized hyperparameters](https://drive.google.com/file/d/1WCNoUMEomXRxgFAtomXLBll9fCjavoLq/view?usp=sharing)
 
 
 Demo of CGAMP on multi-class classification:
