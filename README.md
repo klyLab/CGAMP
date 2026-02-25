@@ -162,10 +162,10 @@ Alternatively, you can retrain your own models using the provided scripts.
 If you find the models useful in your research, please kindly cite our paper:
 
 ```bibtex
-@article{kang2025cgamp,
-  title={Graph-Based Causal Learning and Protein Language Models for Multi-Class Prediction of Antimicrobial Peptides},
-  author={Kang, Leyao and Wang, Huiying and Cai, Mengjie and Wu, Chuya and Wang, Bo and Yue, Zhenyu},
-  year={2025},
+@article{kang2026cgamp,
+  title={Causal Graph Learning for Interpretable Multi-Class Prediction of Antimicrobial Peptides},
+  author={Kang, Leyao and Wang, Huiying and Cai, Mengjie and Yue, Zhenyu},
+  year={2026},
   note={Manuscript in preparation}
 }
 ```
