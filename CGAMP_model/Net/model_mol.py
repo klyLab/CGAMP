@@ -7,9 +7,9 @@ from torch_geometric.nn import global_mean_pool, global_add_pool, global_mean_po
 import torch.nn.functional as F
 from torch.nn import Linear, BatchNorm1d, Sequential, ReLU
 # from conv_base import GNN_node_Virtualnode
-from CGAMP.Net.MolEncoders import AtomEncoder, BondEncoder
+from CGAMP_model.Net.MolEncoders import AtomEncoder, BondEncoder
 #from ogb.graphproppred.mol_encoder import AtomEncoder, BondEncoder
-from CGAMP.Net.gcn_conv import GCNConv
+from CGAMP_model.Net.gcn_conv import GCNConv
 import numpy as np
 class GINEncoder(torch.nn.Module):
     def __init__(self, num_layer, in_dim, emb_dim):

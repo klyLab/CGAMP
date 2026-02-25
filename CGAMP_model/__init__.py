@@ -9,6 +9,6 @@ This package includes:
 __version__ = "1.0.0"
 __author__ = "Kly Lab"
 
-# from CGAMP import protein_init
-from CGAMP.utils import protein_init
-from CGAMP.Net import model_mol
+# from CGAMP_model import protein_init
+from CGAMP_model.utils import protein_init
+from CGAMP_model.Net import model_mol

@@ -2,7 +2,7 @@ import os
 import numpy as np
 import torch
 import torch_geometric
-from CGAMP.Net.model_mol import Causal
+from CGAMP_model.Net.model_mol import Causal
 import warnings
 import json
 from torch_geometric.data import DataLoader, Data

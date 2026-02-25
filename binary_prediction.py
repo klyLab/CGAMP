@@ -8,8 +8,8 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from ogb.graphproppred import Evaluator
 from torch.optim import Adam
 from sklearn.model_selection import train_test_split
-from CGAMP.utils.util import print_args, set_seed
-from CGAMP.Net.model_mol import Causal
+from CGAMP_model.utils.util import print_args, set_seed
+from CGAMP_model.Net.model_mol import Causal
 import time
 import warnings
 from torch_geometric.data import DataLoader as PyGDataLoader

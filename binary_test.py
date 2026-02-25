@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch_geometric
-from CGAMP.Net.model_mol import Causal
+from CGAMP_model.Net.model_mol import Causal
 import warnings
 import os  
 from torch_geometric.data import DataLoader, Data

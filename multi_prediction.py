@@ -7,8 +7,8 @@ import torch_geometric
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from ogb.graphproppred import Evaluator
 from torch.optim import Adam
-from CGAMP.utils.util import set_seed
-from CGAMP.Net.model_mol import Causal
+from CGAMP_model.utils.util import set_seed
+from CGAMP_model.Net.model_mol import Causal
 import warnings
 import json
 from torch.utils.data import random_split
@@ -20,9 +20,10 @@ import argparse
 warnings.filterwarnings('ignore')
 
 class EarlyStopping:
-    def __init__(self, patience=10, delta=0.001):
+    def __init__(self, patience=10, delta=0.001, mode='max'):
         self.patience = patience
         self.delta = delta
+        self.mode = mode
         self.counter = 0
         self.best_score = None
         self.early_stop = False
@@ -30,14 +31,23 @@ class EarlyStopping:
     def __call__(self, score):
         if self.best_score is None:
             self.best_score = score
-        elif score < self.best_score + self.delta:
+            return False
+
+        if self.mode == 'max':
+            improvement = score - self.best_score
+        else:
+            improvement = self.best_score - score
+
+        if improvement > self.delta:
+            self.best_score = score
+            self.counter = 0
+        else:
             self.counter += 1
             if self.counter >= self.patience:
                 self.early_stop = True
-        else:
-            self.best_score = score
-            self.counter = 0
+
         return self.early_stop
+
 
 
 def check_sample_distribution(loader):
@@ -81,8 +91,6 @@ def eval(model, loader, device, args, evaluator, target_class):
                 print(f"Warning: pred size {pred.size(0)} != target size {one_hot_target.size(0)}, skipping loss calculation")
                 continue
                 
-            pred_loss = criterion(pred, one_hot_target)
-            total_loss += pred_loss.item() * num_graphs(data)
             pred_loss = criterion(pred, one_hot_target)
             total_loss += pred_loss.item() * num_graphs(data)
 
@@ -228,7 +236,11 @@ def train_with_best_params(args, target_class, best_params):
     )
 
     best_test_acc = 0.0
-    early_stopping = EarlyStopping(patience=args.patience, delta=args.delta)
+    early_stopping = EarlyStopping(
+        patience=args.patience,
+        delta=args.delta,
+        mode='max'
+    )
     best_model_weights = None
 
     for epoch in range(1, args.epochs + 1):
