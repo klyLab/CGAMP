@@ -126,7 +126,7 @@ python combined_data_processing.py \
 Demo of CGAMP on binary classification:
 ```bash
 # Predict
-python binary_prediction.py
+python binary_train.py
 
 # Test
 python binary_test.py
@@ -140,7 +140,7 @@ For multi-class classification, CGAMP adopts class-specific hyperparameter confi
 Demo of CGAMP on multi-class classification:
 ```bash
 # Predict
-python multi_prediction.py
+python multi_train.py
 
 # Test
 python multi_test.py
