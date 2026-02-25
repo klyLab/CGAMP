@@ -172,5 +172,5 @@ If you find the models useful in your research, please kindly cite our paper:
 
 ## Contact <a name="contact"></a>
 If you have any questions or suggestions regarding this work, please feel free to contact us:
-- Kang Leyao: [kangleyao@stu.ahau.edu.cn](mailto:kangleyao@stu.ahau.edu.cn)  
-- Yue Zhenyu: [zhenyuyue@ahau.edu.cn](mailto:zhenyuyue@ahau.edu.cn)
+- Leyao Kang: [kangleyao@stu.ahau.edu.cn](mailto:kangleyao@stu.ahau.edu.cn)  
+- Zhenyu Yue: [zhenyuyue@ahau.edu.cn](mailto:zhenyuyue@ahau.edu.cn)
