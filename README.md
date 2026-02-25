@@ -28,12 +28,12 @@ conda env create -f ./environment.yml
 We provide the raw amino acid sequences in FASTA format for both binary classification and multi-class classification tasks.The datasets include benchmark sets (for model training) and independent test sets (for model evaluation).
 
 #### Binary classification datasets
-- [Binary classification benchmark dataset](https://drive.google.com/file/d/1tr8Ct15LbbMuiEqfWx6B7rREg4tu8_NF/view?usp=sharing)
-- [Binary classification independent test dataset](https://drive.google.com/file/d/15-bVYhVDDW3yMMCmxHI_Num9Tfw3hFfV/view?usp=drive_link).<br>
+- [Binary classification benchmark dataset](https://github.com/klyLab/CGAMP/tree/main/Datasets/Binary%20classification%20benchmark%20dataset)
+- [Binary classification independent test dataset](https://github.com/klyLab/CGAMP/tree/main/Datasets/Binary%20classification%20independent%20test%20dataset).<br>
 
 #### Multi-class classification datasets
-- [Multi-class classification benchmark dataset](https://drive.google.com/file/d/1oO3tno3dFAFrqeXjJR3dUWphrpqPasIF/view?usp=drive_link)
-- [Multi-class classification independent test dataset](https://drive.google.com/file/d/18Tgbn9Dsu3dOAOOIpdQL3VShVA_EjLys/view?usp=drive_link).<br>
+- [Multi-class classification benchmark dataset](https://github.com/klyLab/CGAMP/tree/main/Datasets/Multi-class%20classification%20benchmark%20dataset)
+- [Multi-class classification independent test dataset](https://github.com/klyLab/CGAMP/tree/main/Datasets/Multi-class%20classification%20independent%20test%20dataset).<br>
 
 
 ## Usage
